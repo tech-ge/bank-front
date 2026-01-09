@@ -1,5 +1,5 @@
 // Configuration
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = 'https://bank-back-production-e058.up.railway.app/';
 let banks = [];
 let currentMethod = 'bank';
 let currentPaymentMethod = 'flutterwave';

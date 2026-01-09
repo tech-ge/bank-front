@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Withdrawal System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #57e732;
+            --primary-dark: #6fc0a5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #8dcdf1;
+            --light: #f3f4f6;
+            --gray: #6cd1d8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 1000px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            min-height: 600px;
+        }
+        
+        .withdrawal-form {
+            flex: 1;
+            padding: 40px;
+            min-width: 350px;
+            border-right: 1px solid #e5e7eb;
+        }
+        
+        .transactions-panel {
+            flex: 1;
+            padding: 40px;
+            min-width: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .select-wrapper {
+            position: relative;
+        }
+        
+        .select-wrapper select {
+            appearance: none;
+            padding-right: 40px;
+        }
+        
+        .select-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--gray);
+        }
+        
+        .method-selector {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .method-option {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            border: 2px solid #d1d5db;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .method-option.active {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .transactions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .transactions-header h2 {
+            color: var(--dark);
+            font-size: 1.8rem;
+        }
+        
+        .transactions-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .transaction-item {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .transaction-id {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+        
+        .transaction-amount {
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 1.4rem;
+            margin: 10px 0;
+        }
+        
+        .transaction-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .transaction-detail {
+            color: var(--gray);
+        }
+        
+        .transaction-detail span {
+            color: var(--dark);
+            font-weight: 500;
+        }
+        
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .no-transactions {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray);
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .notification-success {
+            background: var(--success);
+        }
+        
+        .notification-error {
+            background: var(--danger);
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .withdrawal-form {
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-money-bill-wave"></i> Money Withdrawal System</h1>
+            <p>Withdraw funds to your bank account or M-Pesa instantly</p>
+        </div>
+        
+        <div class="content">
+            <div class="withdrawal-form">
+                <h2 style="color: var(--dark); margin-bottom: 30px;">Make a Withdrawal</h2>
+                
+                <form id="withdrawalForm">
+                    <div class="form-group">
+                        <label for="amount">Amount (KES)</label>
+                        <input type="number" id="amount" class="form-control" min="100" max="1000000" placeholder="Enter amount (min: 100)" required>
+                        <small style="color: var(--gray); display: block; margin-top: 5px;">Maximum: KES 1,000,000</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Withdrawal Method</label>
+                        <div class="method-selector">
+                            <div class="method-option active" data-method="bank">
+                                <i class="fas fa-university"></i><br>
+                                Bank Transfer
+                            </div>
+                            <div class="method-option" data-method="mpesa">
+                                <i class="fas fa-mobile-alt"></i><br>
+                                M-Pesa
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Payment Gateway</label>
+                        <div class="method-selector">
+                            <div class="payment-option active" data-payment="flutterwave">
+                                <i class="fas fa-credit-card"></i><br>
+                                Flutterwave
+                            </div>
+                            <div class="payment-option" data-payment="stripe">
+                                <i class="fas fa-money-bill"></i><br>
+                                Stripe
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="bankDetails" class="form-group">
+                        <label for="accountName">Account Name</label>
+                        <input type="text" id="accountName" class="form-control" placeholder="Enter account holder name" required>
+                        
+                        <label for="accountNumber" style="margin-top: 15px;">Account Number</label>
+                        <input type="text" id="accountNumber" class="form-control" placeholder="Enter account number" required>
+                        
+                        <label for="bankCode" style="margin-top: 15px;">Bank</label>
+                        <div class="select-wrapper">
+                            <select id="bankCode" class="form-control" required>
+                                <option value="">Select Bank</option>
+                                <!-- Banks will be loaded dynamically -->
+                            </select>
+                            <div class="select-icon">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="mpesaDetails" class="form-group" style="display: none;">
+                        <label for="phoneNumber">M-Pesa Phone Number</label>
+                        <input type="tel" id="phoneNumber" class="form-control" placeholder="07XX XXX XXX" pattern="[0-9]{10}" required>
+                        <small style="color: var(--gray); display: block; margin-top: 5px;">Enter your 10-digit Safaricom number</small>
+                    </div>
+                    
+                    <div class="form-group" style="background: var(--light); padding: 15px; border-radius: 10px; margin-top: 30px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Amount:</span>
+                            <span id="displayAmount">KES 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Fees:</span>
+                            <span id="displayFees">KES 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                            <span>Net Amount:</span>
+                            <span id="displayNetAmount">KES 0</span>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="withdrawBtn">
+                        <span id="btnText">Withdraw Funds</span>
+                        <div id="btnLoader" class="loader" style="display: none;"></div>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="transactions-panel">
+                <div class="transactions-header">
+                    <h2>Recent Transactions</h2>
+                    <button class="btn" id="refreshBtn" style="width: auto; padding: 10px 20px; background: var(--light); color: var(--dark);">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                
+                <div class="transactions-list" id="transactionsList">
+                    <div class="no-transactions">
+                        <i class="fas fa-exchange-alt" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <p>No transactions yet. Make your first withdrawal!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification"></div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

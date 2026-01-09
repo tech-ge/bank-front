@@ -1,5 +1,9 @@
 // Configuration
-const BACKEND_URL = 'https://bank-back-production-e058.up.railway.app/';
+// Auto-detect backend URL based on environment
+const BACKEND_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000'
+    : 'https://bank-back-production-e058.up.railway.app';
+
 let banks = [];
 let currentMethod = 'bank';
 let currentPaymentMethod = 'flutterwave';

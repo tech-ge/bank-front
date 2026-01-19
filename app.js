@@ -1,26 +1,31 @@
 // Configuration
-// Auto-detect backend URL based on environment
-const BACKEND_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000'
-    : 'https://bank-back-production-e058.up.railway.app';
+const BACKEND_URL = 'https://bank-back-production-e058.up.railway.app';
+// Alternative: 'http://localhost:5000' for local testing
 
-let banks = [];
+// Global variables
 let currentMethod = 'bank';
-let currentPaymentMethod = 'flutterwave';
+let transactions = [];
 
 // DOM Elements
-const withdrawalForm = document.getElementById('withdrawalForm');
-const amountInput = document.getElementById('amount');
+const withdrawSection = document.getElementById('withdrawSection');
+const depositSection = document.getElementById('depositSection');
+const tabs = document.querySelectorAll('.tab');
+const withdrawForm = document.getElementById('withdrawForm');
+const depositForm = document.getElementById('depositForm');
+const withdrawAmount = document.getElementById('withdrawAmount');
+const depositAmount = document.getElementById('depositAmount');
+const methodOptions = document.querySelectorAll('.method-option');
 const bankDetails = document.getElementById('bankDetails');
 const mpesaDetails = document.getElementById('mpesaDetails');
-const withdrawBtn = document.getElementById('withdrawBtn');
-const btnText = document.getElementById('btnText');
-const btnLoader = document.getElementById('btnLoader');
+const balanceAmount = document.getElementById('balanceAmount');
 const transactionsList = document.getElementById('transactionsList');
-const refreshBtn = document.getElementById('refreshBtn');
+const noTransactions = document.getElementById('noTransactions');
+const refreshBalance = document.getElementById('refreshBalance');
 const notification = document.getElementById('notification');
-const methodOptions = document.querySelectorAll('.method-option');
-const bankSelect = document.getElementById('bankCode');
+const notificationIcon = document.getElementById('notificationIcon');
+const notificationTitle = document.getElementById('notificationTitle');
+const notificationMessage = document.getElementById('notificationMessage');
+const notificationClose = document.getElementById('notificationClose');
 
 // Display elements
 const displayAmount = document.getElementById('displayAmount');
@@ -28,11 +33,16 @@ const displayFees = document.getElementById('displayFees');
 const displayNetAmount = document.getElementById('displayNetAmount');
 
 // Initialize the app
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('App initialized');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('💰 Stripe Money System Initialized');
     
-    // Load initial data
-    await loadBanks();
+    // Setup tabs
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            setActiveTab(tabId);
+        });
+    });
     
     // Setup method selection
     methodOptions.forEach(option => {
@@ -42,30 +52,54 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
     
-    // Setup payment method selection
-    const paymentOptions = document.querySelectorAll('.payment-option');
-    paymentOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            const method = this.getAttribute('data-payment');
-            setPaymentMethod(method);
-        });
-    });
-    
     // Setup amount calculation
-    amountInput.addEventListener('input', calculateFees);
+    withdrawAmount.addEventListener('input', calculateFees);
     
-    // Form submission
-    withdrawalForm.addEventListener('submit', handleWithdrawal);
+    // Form submissions
+    withdrawForm.addEventListener('submit', handleWithdrawal);
+    depositForm.addEventListener('submit', handleDeposit);
     
-    // Calculate initial fees
+    // Refresh balance button
+    refreshBalance.addEventListener('click', loadBalance);
+    
+    // Notification close button
+    notificationClose.addEventListener('click', hideNotification);
+    
+    // Initial calculations
     calculateFees();
     
-    console.log('App setup complete');
+    // Load initial data
+    loadBalance();
+    
+    console.log('✅ App setup complete');
 });
+
+// Set active tab
+function setActiveTab(tabId) {
+    console.log('Switching to tab:', tabId);
+    
+    // Update tabs UI
+    tabs.forEach(tab => {
+        if (tab.getAttribute('data-tab') === tabId) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+    
+    // Show/hide sections
+    if (tabId === 'withdraw') {
+        withdrawSection.style.display = 'block';
+        depositSection.style.display = 'none';
+    } else {
+        withdrawSection.style.display = 'none';
+        depositSection.style.display = 'block';
+    }
+}
 
 // Set withdrawal method
 function setWithdrawalMethod(method) {
-    console.log('Setting withdrawal method to:', method);
+    console.log('Setting method to:', method);
     currentMethod = method;
     
     // Update UI
@@ -83,14 +117,14 @@ function setWithdrawalMethod(method) {
         mpesaDetails.style.display = 'none';
         document.getElementById('accountName').required = true;
         document.getElementById('accountNumber').required = true;
-        document.getElementById('bankCode').required = true;
+        document.getElementById('bankName').required = true;
         document.getElementById('phoneNumber').required = false;
     } else {
         bankDetails.style.display = 'none';
         mpesaDetails.style.display = 'block';
         document.getElementById('accountName').required = false;
         document.getElementById('accountNumber').required = false;
-        document.getElementById('bankCode').required = false;
+        document.getElementById('bankName').required = false;
         document.getElementById('phoneNumber').required = true;
     }
     
@@ -98,25 +132,9 @@ function setWithdrawalMethod(method) {
     calculateFees();
 }
 
-// Set payment gateway method
-function setPaymentMethod(method) {
-    console.log('Setting payment method to:', method);
-    currentPaymentMethod = method;
-    
-    // Update UI
-    const paymentOptions = document.querySelectorAll('.payment-option');
-    paymentOptions.forEach(option => {
-        if (option.getAttribute('data-payment') === method) {
-            option.classList.add('active');
-        } else {
-            option.classList.remove('active');
-        }
-    });
-}
-
-// Calculate fees based on amount and method
+// Calculate fees
 function calculateFees() {
-    const amount = parseFloat(amountInput.value) || 0;
+    const amount = parseFloat(withdrawAmount.value) || 0;
     const fees = currentMethod === 'bank' ? 50 : 25;
     const netAmount = amount - fees;
     
@@ -125,41 +143,41 @@ function calculateFees() {
     displayNetAmount.textContent = `KES ${Math.max(0, netAmount).toLocaleString()}`;
 }
 
-// Load banks from backend
-async function loadBanks() {
+// Load balance from backend
+async function loadBalance() {
     try {
-        console.log('Loading banks...');
-        const response = await fetch(`${BACKEND_URL}/api/banks`);
+        console.log('Loading balance...');
+        const response = await fetch(`${BACKEND_URL}/api/balance`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
         const data = await response.json();
         
         if (data.success) {
-            banks = data.banks;
-            console.log('Loaded banks:', banks.length);
-            
-            // Populate bank select
-            bankSelect.innerHTML = '<option value="">Select Bank</option>' +
-                banks.map(bank => 
-                    `<option value="${bank.code}">${bank.name}</option>`
-                ).join('');
+            balanceAmount.textContent = data.balance.toLocaleString();
+            console.log('Balance loaded:', data.balance);
+        } else {
+            showNotification('Failed to load balance', 'error');
         }
     } catch (error) {
-        console.error('Error loading banks:', error);
-        showNotification('Failed to load banks list', 'error');
+        console.error('Balance load error:', error);
+        showNotification('Cannot connect to server', 'error');
     }
 }
 
-// Handle withdrawal form submission
+// Handle withdrawal
 async function handleWithdrawal(e) {
     e.preventDefault();
-    console.log('Handling withdrawal...');
+    console.log('Processing withdrawal...');
     
     // Get form values
-    const amount = parseFloat(amountInput.value);
-    const withdrawalMethod = currentMethod;
-    const paymentMethod = currentPaymentMethod;
+    const amount = parseFloat(withdrawAmount.value);
+    const method = currentMethod;
     const accountName = document.getElementById('accountName').value;
     const accountNumber = document.getElementById('accountNumber').value;
-    const bankCode = document.getElementById('bankCode').value;
+    const bankName = document.getElementById('bankName').value;
     const phoneNumber = document.getElementById('phoneNumber').value;
     
     // Validation
@@ -168,107 +186,263 @@ async function handleWithdrawal(e) {
         return;
     }
     
-    if (withdrawalMethod === 'bank') {
-        if (!accountName || !accountNumber || !bankCode) {
+    if (method === 'bank') {
+        if (!accountName || !accountNumber || !bankName) {
             showNotification('Please fill all bank details', 'error');
             return;
         }
-    } else if (withdrawalMethod === 'mpesa') {
+    } else if (method === 'mpesa') {
         if (!phoneNumber || !/^[0-9]{10}$/.test(phoneNumber)) {
             showNotification('Please enter a valid 10-digit phone number', 'error');
             return;
         }
     }
     
-    // Prepare withdrawal data
+    // Prepare data
     const withdrawalData = {
         amount,
-        withdrawalMethod,
-        paymentMethod,
+        method,
         accountName,
-        accountNumber,
-        bankCode,
+        accountDetails: `${accountNumber} - ${bankName}`,
         phoneNumber
     };
     
-    console.log('Submitting withdrawal:', withdrawalData);
+    console.log('Withdrawal data:', withdrawalData);
     
-    // Show loading state
+    // Show loading
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    const withdrawBtnText = document.getElementById('withdrawBtnText');
+    const withdrawLoader = document.getElementById('withdrawLoader');
+    
     withdrawBtn.disabled = true;
-    btnText.textContent = 'Processing...';
-    btnLoader.style.display = 'inline-block';
+    withdrawBtnText.textContent = 'Processing...';
+    withdrawLoader.style.display = 'inline-block';
     
     try {
-        // Make API call to backend
+        // Call backend API
         const response = await fetch(`${BACKEND_URL}/api/withdraw`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(withdrawalData)
         });
         
         const result = await response.json();
-        console.log('Withdrawal response:', result);
+        console.log('Withdrawal result:', result);
         
         if (result.success) {
-            console.log('✅ SUCCESSFUL - Withdrawal of KES ' + amount.toLocaleString() + ' initiated. Transaction ID: ' + result.transactionId);
+            // Add to transactions list
+            addTransaction({
+                id: result.transactionId,
+                type: 'withdrawal',
+                amount: result.amount,
+                method: result.method,
+                status: 'success',
+                message: result.message,
+                timestamp: result.timestamp || new Date().toISOString()
+            });
+            
+            // Show success popup
+            showNotification(
+                `✅ ${result.message}`,
+                'success',
+                `Transaction ID: ${result.transactionId}<br>Net Amount: KES ${result.netAmount}`
+            );
             
             // Reset form
-            withdrawalForm.reset();
-            
-            // Reset calculation
+            withdrawForm.reset();
             calculateFees();
+            
+            // Update balance
+            setTimeout(loadBalance, 1000);
         } else {
-            showNotification(`Withdrawal failed: ${result.message}`, 'error');
+            // Add failed transaction
+            addTransaction({
+                id: result.transactionId || `failed_${Date.now()}`,
+                type: 'withdrawal',
+                amount: amount,
+                method: method,
+                status: 'failed',
+                message: result.message,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Show error popup
+            showNotification(
+                '❌ Withdrawal Failed',
+                'error',
+                result.message || 'Please try again'
+            );
         }
     } catch (error) {
         console.error('Withdrawal error:', error);
-        showNotification('Network error. Please check your connection and try again.', 'error');
+        showNotification(
+            '❌ Network Error',
+            'error',
+            'Cannot connect to server. Please check your connection.'
+        );
     } finally {
-        // Reset button state
+        // Reset button
         withdrawBtn.disabled = false;
-        btnText.textContent = 'Withdraw Funds';
-        btnLoader.style.display = 'none';
+        withdrawBtnText.textContent = 'Withdraw Funds';
+        withdrawLoader.style.display = 'none';
     }
 }
 
-// Load banks from backend
-async function loadBanks() {
+// Handle deposit
+async function handleDeposit(e) {
+    e.preventDefault();
+    console.log('Processing deposit...');
+    
+    const amount = parseFloat(depositAmount.value);
+    
+    // Validation
+    if (!amount || amount < 100 || amount > 500000) {
+        showNotification('Amount must be between KES 100 and KES 500,000', 'error');
+        return;
+    }
+    
+    // Show loading
+    const depositBtn = document.getElementById('depositBtn');
+    const depositBtnText = document.getElementById('depositBtnText');
+    const depositLoader = document.getElementById('depositLoader');
+    
+    depositBtn.disabled = true;
+    depositBtnText.textContent = 'Creating Payment...';
+    depositLoader.style.display = 'inline-block';
+    
     try {
-        console.log('Loading banks...');
-        const response = await fetch(`${BACKEND_URL}/api/banks`);
-        const data = await response.json();
+        // Create deposit session
+        const response = await fetch(`${BACKEND_URL}/api/deposit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: amount,
+                returnUrl: window.location.href
+            })
+        });
         
-        if (data.success) {
-            banks = data.banks;
-            console.log('Loaded banks:', banks.length);
+        const result = await response.json();
+        console.log('Deposit result:', result);
+        
+        if (result.success) {
+            // Add to transactions list
+            addTransaction({
+                id: result.transactionId || `dep_${Date.now()}`,
+                type: 'deposit',
+                amount: result.amount,
+                method: 'stripe',
+                status: 'pending',
+                message: 'Redirecting to payment...',
+                timestamp: new Date().toISOString()
+            });
             
-            // Populate bank select
-            bankSelect.innerHTML = '<option value="">Select Bank</option>' +
-                banks.map(bank => 
-                    `<option value="${bank.code}">${bank.name}</option>`
-                ).join('');
+            // Redirect to Stripe Checkout
+            window.location.href = result.url;
+        } else {
+            showNotification(
+                '❌ Deposit Failed',
+                'error',
+                result.message || 'Could not create payment'
+            );
         }
     } catch (error) {
-        console.error('Error loading banks:', error);
-        showNotification('Failed to load banks list', 'error');
+        console.error('Deposit error:', error);
+        showNotification(
+            '❌ Network Error',
+            'error',
+            'Cannot connect to payment server'
+        );
+    } finally {
+        depositBtn.disabled = false;
+        depositBtnText.textContent = 'Proceed to Payment';
+        depositLoader.style.display = 'none';
     }
 }
 
-// Show notification
-function showNotification(message, type) {
-    console.log('Notification:', type, message);
-    notification.textContent = message;
-    notification.className = `notification ${type === 'success' ? 'notification-success' : 'notification-error'}`;
+// Add transaction to list
+function addTransaction(transaction) {
+    console.log('Adding transaction:', transaction);
     
-    // Add show class
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
+    // Add to array
+    transactions.unshift(transaction);
     
-    // Remove after 5 seconds
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 5000);
+    // Update UI
+    updateTransactionsList();
+}
+
+// Update transactions list UI
+function updateTransactionsList() {
+    if (transactions.length === 0) {
+        noTransactions.style.display = 'block';
+        return;
+    }
+    
+    noTransactions.style.display = 'none';
+    
+    // Clear and rebuild list
+    transactionsList.innerHTML = '';
+    
+    transactions.slice(0, 5).forEach(txn => {
+        const item = document.createElement('div');
+        item.className = `transaction-item transaction-${txn.status}`;
+        
+        const icon = txn.type === 'deposit' ? '⬇️' : '⬆️';
+        const methodIcon = txn.method === 'bank' ? '🏦' : 
+                          txn.method === 'mpesa' ? '📱' : '💳';
+        const statusColor = txn.status === 'success' ? 'var(--success)' : 
+                           txn.status === 'failed' ? 'var(--danger)' : 'var(--warning)';
+        
+        item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-weight: 600; color: var(--dark);">
+                    ${icon} ${txn.type.toUpperCase()}
+                </div>
+                <div style="background: ${statusColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                    ${txn.status.toUpperCase()}
+                </div>
+            </div>
+            <div style="font-size: 1.3rem; font-weight: 700; color: var(--dark); margin: 10px 0;">
+                KES ${txn.amount.toLocaleString()}
+            </div>
+            <div style="color: var(--gray); font-size: 0.9rem;">
+                ${methodIcon} ${txn.method.toUpperCase()} • ${new Date(txn.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            </div>
+            <div style="margin-top: 8px; color: var(--dark); font-size: 0.9rem;">
+                ${txn.message}
+            </div>
+        `;
+        
+        transactionsList.appendChild(item);
+    });
+}
+
+// Show notification popup
+function showNotification(title, type, message = '') {
+    console.log('Notification:', type, title, message);
+    
+    // Set content
+    notificationTitle.textContent = title;
+    notificationMessage.innerHTML = message;
+    
+    // Set icon
+    if (type === 'success') {
+        notificationIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+        notification.className = 'notification notification-success';
+    } else {
+        notificationIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+        notification.className = 'notification notification-error';
+    }
+    
+    // Show with animation
+    notification.classList.add('show');
+    
+    // Auto-hide after 5 seconds (only for success)
+    if (type === 'success') {
+        setTimeout(hideNotification, 5000);
+    }
+}
+
+// Hide notification
+function hideNotification() {
+    notification.classList.remove('show');
 }

@@ -3,26 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stripe Money System | Deposit & Withdraw</title>
+    <title>Stripe Money Transfer | Bank & M-Pesa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://js.stripe.com/v3/"></script>
     <style>
         :root {
-            --primary: #635bff;
-            --primary-dark: #4a42d6;
+            --primary: #57e732;
+            --primary-dark: #4ac72e;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
             --dark: #1f2937;
-            --light: #f9fafb;
-            --gray: #9ca3af;
+            --light: #f3f4f6;
+            --gray: #6b7280;
         }
         
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
@@ -37,76 +36,51 @@
         .container {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 1200px;
+            max-width: 1100px;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
         }
         
         .header {
             background: linear-gradient(to right, var(--primary), var(--primary-dark));
             color: white;
-            padding: 25px 40px;
+            padding: 30px 40px;
             text-align: center;
         }
         
         .header h1 {
-            font-size: 2.2rem;
+            font-size: 2.3rem;
             margin-bottom: 10px;
         }
         
         .header p {
             opacity: 0.9;
-            font-size: 1rem;
-        }
-        
-        .tabs {
-            display: flex;
-            background: var(--light);
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .tab {
-            flex: 1;
-            padding: 18px;
-            text-align: center;
-            font-weight: 600;
             font-size: 1.1rem;
-            cursor: pointer;
-            color: var(--gray);
-            transition: all 0.3s;
-        }
-        
-        .tab.active {
-            color: var(--primary);
-            border-bottom: 3px solid var(--primary);
-            background: white;
         }
         
         .content {
             display: flex;
-            min-height: 600px;
+            flex-wrap: wrap;
+            min-height: 550px;
         }
         
-        .form-section {
-            flex: 1;
-            padding: 40px;
-            min-width: 350px;
+        .withdrawal-form {
+            flex: 1.2;
+            padding: 35px;
+            min-width: 400px;
+            border-right: 1px solid #e5e7eb;
         }
         
-        .balance-section {
-            flex: 1;
-            padding: 40px;
+        .info-panel {
+            flex: 0.8;
+            padding: 35px;
+            min-width: 300px;
             background: var(--light);
-            display: flex;
-            flex-direction: column;
-            min-width: 350px;
         }
         
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 22px;
         }
         
         .form-group label {
@@ -129,13 +103,13 @@
         .form-control:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(87, 231, 50, 0.1);
         }
         
         .method-selector {
             display: flex;
-            gap: 15px;
-            margin-top: 10px;
+            gap: 12px;
+            margin-top: 8px;
         }
         
         .method-option {
@@ -151,7 +125,7 @@
         
         .method-option.active {
             border-color: var(--primary);
-            background: rgba(99, 91, 255, 0.1);
+            background: rgba(87, 231, 50, 0.1);
             color: var(--primary);
         }
         
@@ -174,20 +148,10 @@
             color: white;
         }
         
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(99, 91, 255, 0.2);
-        }
-        
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #0da271;
-            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(87, 231, 50, 0.3);
         }
         
         .btn:disabled {
@@ -205,6 +169,7 @@
             border-top-color: white;
             animation: spin 1s ease-in-out infinite;
             margin-right: 10px;
+            vertical-align: middle;
         }
         
         @keyframes spin {
@@ -214,63 +179,51 @@
         .balance-card {
             background: white;
             border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
             text-align: center;
         }
         
         .balance-amount {
-            font-size: 3.5rem;
+            font-size: 2.8rem;
             font-weight: 700;
             color: var(--primary);
-            margin: 20px 0;
+            margin: 15px 0;
         }
         
-        .currency {
-            font-size: 1.5rem;
-            color: var(--gray);
-        }
-        
-        .transactions-list {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-        
-        .transaction-item {
+        .fees-calculator {
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 20px;
-            margin-bottom: 15px;
+            margin-top: 25px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid var(--primary);
         }
         
-        .transaction-success {
-            border-left-color: var(--success);
-        }
-        
-        .transaction-failed {
-            border-left-color: var(--danger);
+        .fees-calculator div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f1f1;
         }
         
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 20px 30px;
+            top: 25px;
+            right: 25px;
+            padding: 20px 25px;
             border-radius: 12px;
             color: white;
             font-weight: 600;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
-            z-index: 1000;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
             opacity: 0;
             transform: translateX(100px);
-            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            max-width: 400px;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 380px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
         }
         
         .notification.show {
@@ -280,7 +233,7 @@
         
         .notification-success {
             background: var(--success);
-            border-left: 5px solid #0da271;
+            border-left: 5px solid #059669;
         }
         
         .notification-error {
@@ -289,12 +242,18 @@
         }
         
         .notification-icon {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             margin-right: 15px;
+            margin-top: 2px;
         }
         
         .notification-content {
             flex: 1;
+        }
+        
+        .notification-title {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
         }
         
         .notification-close {
@@ -302,25 +261,23 @@
             border: none;
             color: white;
             cursor: pointer;
-            font-size: 1.2rem;
-            padding: 0 0 0 10px;
+            font-size: 1.1rem;
+            padding: 0;
+            margin-left: 15px;
         }
         
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .content {
                 flex-direction: column;
             }
             
-            .balance-section {
-                border-top: 1px solid #e5e7eb;
+            .withdrawal-form {
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
             }
             
             .header h1 {
-                font-size: 1.8rem;
-            }
-            
-            .balance-amount {
-                font-size: 2.5rem;
+                font-size: 1.9rem;
             }
         }
     </style>
@@ -328,25 +285,20 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-university"></i> Stripe Money System</h1>
-            <p>Instant Deposits & Withdrawals via Stripe</p>
-        </div>
-        
-        <div class="tabs">
-            <div class="tab active" data-tab="withdraw">Withdraw Money</div>
-            <div class="tab" data-tab="deposit">Deposit Money</div>
+            <h1><i class="fas fa-money-bill-wave"></i> Stripe Money Transfer</h1>
+            <p>Instant Bank & M-Pesa Withdrawals | Secure Stripe Payments</p>
         </div>
         
         <div class="content">
-            <!-- WITHDRAW SECTION -->
-            <div class="form-section" id="withdrawSection">
-                <h2 style="color: var(--dark); margin-bottom: 10px;">Withdraw Funds</h2>
-                <p style="color: var(--gray); margin-bottom: 30px;">Withdraw to bank account or M-Pesa instantly</p>
+            <!-- WITHDRAWAL FORM -->
+            <div class="withdrawal-form">
+                <h2 style="color: var(--dark); margin-bottom: 5px;">Make a Withdrawal</h2>
+                <p style="color: var(--gray); margin-bottom: 25px; font-size: 0.95rem;">Withdraw funds to your bank or M-Pesa instantly via Stripe</p>
                 
-                <form id="withdrawForm">
+                <form id="withdrawalForm">
                     <div class="form-group">
-                        <label for="withdrawAmount">Amount (KES)</label>
-                        <input type="number" id="withdrawAmount" class="form-control" min="100" max="1000000" placeholder="Enter amount (min: KES 100)" required>
+                        <label for="amount">Amount (KES)</label>
+                        <input type="number" id="amount" class="form-control" min="100" max="1000000" placeholder="Enter amount (min: KES 100)" required>
                         <small style="color: var(--gray); display: block; margin-top: 5px;">Maximum: KES 1,000,000</small>
                     </div>
                     
@@ -372,85 +324,63 @@
                         <input type="text" id="accountNumber" class="form-control" placeholder="Enter account number" required>
                         
                         <label for="bankName" style="margin-top: 15px;">Bank Name</label>
-                        <input type="text" id="bankName" class="form-control" placeholder="Enter bank name" required>
+                        <input type="text" id="bankName" class="form-control" placeholder="e.g., Equity Bank, KCB" required>
                     </div>
                     
                     <div id="mpesaDetails" class="form-group" style="display: none;">
                         <label for="phoneNumber">M-Pesa Phone Number</label>
-                        <input type="tel" id="phoneNumber" class="form-control" placeholder="07XX XXX XXX (10 digits)" pattern="[0-9]{10}" required>
+                        <input type="tel" id="phoneNumber" class="form-control" placeholder="07XX XXX XXX" pattern="[0-9]{10}" required>
                         <small style="color: var(--gray); display: block; margin-top: 5px;">Enter your 10-digit Safaricom number</small>
                     </div>
                     
-                    <div class="form-group" style="background: var(--light); padding: 20px; border-radius: 10px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span>Amount:</span>
-                            <span id="displayAmount">KES 0</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span>Fees:</span>
-                            <span id="displayFees">KES 0</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 1.1rem;">
-                            <span>Net Amount:</span>
-                            <span id="displayNetAmount">KES 0</span>
-                        </div>
-                    </div>
-                    
                     <button type="submit" class="btn btn-primary" id="withdrawBtn">
-                        <span id="withdrawBtnText">Withdraw Funds</span>
-                        <div id="withdrawLoader" class="loader" style="display: none;"></div>
+                        <span id="btnText">Withdraw Funds</span>
+                        <div id="btnLoader" class="loader" style="display: none;"></div>
                     </button>
                 </form>
             </div>
             
-            <!-- DEPOSIT SECTION -->
-            <div class="form-section" id="depositSection" style="display: none;">
-                <h2 style="color: var(--dark); margin-bottom: 10px;">Deposit Funds</h2>
-                <p style="color: var(--gray); margin-bottom: 30px;">Add money to your account instantly via Stripe</p>
-                
-                <form id="depositForm">
-                    <div class="form-group">
-                        <label for="depositAmount">Amount (KES)</label>
-                        <input type="number" id="depositAmount" class="form-control" min="100" max="500000" placeholder="Enter amount (min: KES 100)" required>
-                        <small style="color: var(--gray); display: block; margin-top: 5px;">Maximum: KES 500,000</small>
-                    </div>
-                    
-                    <div class="form-group" style="background: #e0f2fe; padding: 20px; border-radius: 10px;">
-                        <h4 style="color: var(--primary); margin-bottom: 10px;">
-                            <i class="fas fa-credit-card"></i> Card Payment via Stripe
-                        </h4>
-                        <p style="color: var(--dark); font-size: 0.95rem;">
-                            You'll be redirected to Stripe's secure payment page to complete your deposit.
-                            All major cards accepted.
-                        </p>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-success" id="depositBtn">
-                        <span id="depositBtnText">Proceed to Payment</span>
-                        <div id="depositLoader" class="loader" style="display: none;"></div>
-                    </button>
-                </form>
-            </div>
-            
-            <!-- BALANCE & TRANSACTIONS SECTION -->
-            <div class="balance-section">
+            <!-- INFO PANEL -->
+            <div class="info-panel">
                 <div class="balance-card">
-                    <h3 style="color: var(--gray); margin-bottom: 5px;">Available Balance</h3>
+                    <h3 style="color: var(--gray); margin-bottom: 5px; font-size: 1rem;">AVAILABLE BALANCE</h3>
                     <div class="balance-amount">
-                        <span id="balanceAmount">0</span>
-                        <span class="currency">KES</span>
+                        <span id="balanceAmount">100,000</span>
+                        <span style="font-size: 1.5rem; color: var(--gray);">KES</span>
                     </div>
-                    <button class="btn" id="refreshBalance" style="width: auto; padding: 10px 25px; background: var(--light); color: var(--dark);">
-                        <i class="fas fa-sync-alt"></i> Refresh Balance
+                    <button class="btn" id="refreshBtn" style="width: auto; padding: 10px 20px; background: white; color: var(--dark); border: 1px solid #d1d5db;">
+                        <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                 </div>
                 
-                <h3 style="color: var(--dark); margin-bottom: 20px;">Recent Transactions</h3>
-                <div class="transactions-list" id="transactionsList">
-                    <div class="no-transactions" id="noTransactions">
-                        <i class="fas fa-exchange-alt" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5; color: var(--gray);"></i>
-                        <p style="color: var(--gray);">No transactions yet</p>
+                <div class="fees-calculator">
+                    <h4 style="color: var(--dark); margin-bottom: 15px;">
+                        <i class="fas fa-calculator"></i> Transaction Summary
+                    </h4>
+                    <div>
+                        <span>Amount:</span>
+                        <span id="displayAmount">KES 0</span>
                     </div>
+                    <div>
+                        <span>Fees:</span>
+                        <span id="displayFees">KES 0</span>
+                    </div>
+                    <div style="font-weight: 700; border-bottom: none; padding-top: 8px; margin-top: 5px; border-top: 2px solid #e5e7eb;">
+                        <span>Net Amount:</span>
+                        <span id="displayNetAmount">KES 0</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; padding: 15px; background: #e0f2fe; border-radius: 10px;">
+                    <h4 style="color: var(--primary); margin-bottom: 10px;">
+                        <i class="fas fa-info-circle"></i> How It Works
+                    </h4>
+                    <ul style="color: var(--dark); font-size: 0.9rem; padding-left: 20px;">
+                        <li style="margin-bottom: 8px;">Withdrawals processed via Stripe</li>
+                        <li style="margin-bottom: 8px;">Bank fee: <strong>KES 50</strong></li>
+                        <li style="margin-bottom: 8px;">M-Pesa fee: <strong>KES 25</strong></li>
+                        <li>Instant success/failure popup</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -460,14 +390,274 @@
     <div id="notification" class="notification">
         <div class="notification-icon" id="notificationIcon"></div>
         <div class="notification-content">
-            <div id="notificationTitle" style="font-size: 1.1rem; margin-bottom: 5px;"></div>
-            <div id="notificationMessage" style="font-size: 0.95rem; opacity: 0.9;"></div>
+            <div class="notification-title" id="notificationTitle"></div>
+            <div id="notificationMessage" style="font-size: 0.95rem; opacity: 0.9; line-height: 1.4;"></div>
         </div>
         <button class="notification-close" id="notificationClose">
             <i class="fas fa-times"></i>
         </button>
     </div>
     
-    <script src="app.js"></script>
+    <script>
+        // ================ CONFIGURATION ================
+        const BACKEND_URL = 'https://bank-back-production-e058.up.railway.app';
+        // For local testing: 'http://localhost:5000'
+        
+        // ================ APP STATE ================
+        let currentMethod = 'bank';
+        let demoBalance = 100000;
+        
+        // ================ DOM ELEMENTS ================
+        const withdrawalForm = document.getElementById('withdrawalForm');
+        const amountInput = document.getElementById('amount');
+        const methodOptions = document.querySelectorAll('.method-option');
+        const bankDetails = document.getElementById('bankDetails');
+        const mpesaDetails = document.getElementById('mpesaDetails');
+        const withdrawBtn = document.getElementById('withdrawBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const balanceAmount = document.getElementById('balanceAmount');
+        const displayAmount = document.getElementById('displayAmount');
+        const displayFees = document.getElementById('displayFees');
+        const displayNetAmount = document.getElementById('displayNetAmount');
+        const notification = document.getElementById('notification');
+        const notificationIcon = document.getElementById('notificationIcon');
+        const notificationTitle = document.getElementById('notificationTitle');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const notificationClose = document.getElementById('notificationClose');
+        
+        // ================ INITIALIZATION ================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('💰 Stripe Money System v2.0 LOADED');
+            
+            // Setup method selection
+            methodOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const method = this.getAttribute('data-method');
+                    setWithdrawalMethod(method);
+                });
+            });
+            
+            // Setup amount calculation
+            amountInput.addEventListener('input', calculateFees);
+            
+            // Form submission
+            withdrawalForm.addEventListener('submit', handleWithdrawal);
+            
+            // Refresh button
+            refreshBtn.addEventListener('click', refreshBalance);
+            
+            // Notification close
+            notificationClose.addEventListener('click', hideNotification);
+            
+            // Initial calculations
+            calculateFees();
+            
+            // Show initial balance
+            updateBalanceDisplay();
+            
+            console.log('✅ System ready. Backend:', BACKEND_URL);
+        });
+        
+        // ================ CORE FUNCTIONS ================
+        function setWithdrawalMethod(method) {
+            console.log('Method:', method);
+            currentMethod = method;
+            
+            // Update UI
+            methodOptions.forEach(option => {
+                if (option.getAttribute('data-method') === method) {
+                    option.classList.add('active');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
+            
+            // Show/hide forms
+            if (method === 'bank') {
+                bankDetails.style.display = 'block';
+                mpesaDetails.style.display = 'none';
+                document.getElementById('accountName').required = true;
+                document.getElementById('accountNumber').required = true;
+                document.getElementById('bankName').required = true;
+                document.getElementById('phoneNumber').required = false;
+            } else {
+                bankDetails.style.display = 'none';
+                mpesaDetails.style.display = 'block';
+                document.getElementById('accountName').required = false;
+                document.getElementById('accountNumber').required = false;
+                document.getElementById('bankName').required = false;
+                document.getElementById('phoneNumber').required = true;
+            }
+            
+            calculateFees();
+        }
+        
+        function calculateFees() {
+            const amount = parseFloat(amountInput.value) || 0;
+            const fees = currentMethod === 'bank' ? 50 : 25;
+            const netAmount = amount - fees;
+            
+            displayAmount.textContent = `KES ${amount.toLocaleString()}`;
+            displayFees.textContent = `KES ${fees.toLocaleString()}`;
+            displayNetAmount.textContent = `KES ${Math.max(0, netAmount).toLocaleString()}`;
+        }
+        
+        function updateBalanceDisplay() {
+            balanceAmount.textContent = demoBalance.toLocaleString();
+        }
+        
+        function refreshBalance() {
+            // Simulate API call
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing';
+            setTimeout(() => {
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                updateBalanceDisplay();
+                showNotification('Balance Refreshed', 'success', 'Updated to KES ' + demoBalance.toLocaleString());
+            }, 800);
+        }
+        
+        async function handleWithdrawal(e) {
+            e.preventDefault();
+            console.log('Processing withdrawal...');
+            
+            // Get values
+            const amount = parseFloat(amountInput.value);
+            const method = currentMethod;
+            const accountName = document.getElementById('accountName').value;
+            const accountNumber = document.getElementById('accountNumber').value;
+            const bankName = document.getElementById('bankName').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            
+            // Validation
+            if (!amount || amount < 100 || amount > 1000000) {
+                showNotification('Invalid Amount', 'error', 'Amount must be between KES 100 and KES 1,000,000');
+                return;
+            }
+            
+            if (method === 'bank') {
+                if (!accountName || !accountNumber || !bankName) {
+                    showNotification('Missing Details', 'error', 'Please fill all bank details');
+                    return;
+                }
+            } else if (method === 'mpesa') {
+                if (!phoneNumber || !/^[0-9]{10}$/.test(phoneNumber)) {
+                    showNotification('Invalid Phone', 'error', 'Enter valid 10-digit Safaricom number');
+                    return;
+                }
+            }
+            
+            // Check balance
+            if (amount > demoBalance) {
+                showNotification('Insufficient Balance', 'error', `Available: KES ${demoBalance.toLocaleString()}`);
+                return;
+            }
+            
+            // Show loading
+            withdrawBtn.disabled = true;
+            btnText.textContent = 'Processing...';
+            btnLoader.style.display = 'inline-block';
+            
+            try {
+                // Prepare data
+                const withdrawalData = {
+                    amount: amount,
+                    method: method,
+                    accountName: accountName,
+                    accountDetails: `${accountNumber} - ${bankName}`,
+                    phoneNumber: phoneNumber
+                };
+                
+                console.log('Calling backend:', BACKEND_URL);
+                
+                // Call Stripe backend
+                const response = await fetch(`${BACKEND_URL}/api/withdraw`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(withdrawalData)
+                });
+                
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                console.log('Backend result:', result);
+                
+                if (result.success) {
+                    // SUCCESS
+                    demoBalance -= amount; // Update demo balance
+                    updateBalanceDisplay();
+                    
+                    showNotification(
+                        '✅ Withdrawal Successful!',
+                        'success',
+                        `KES ${amount.toLocaleString()} sent via ${method.toUpperCase()}<br>
+                         Transaction ID: ${result.transactionId}<br>
+                         Net Amount: KES ${result.netAmount}`
+                    );
+                    
+                    // Reset form
+                    withdrawalForm.reset();
+                    calculateFees();
+                    
+                } else {
+                    // FAILED
+                    showNotification(
+                        '❌ Withdrawal Failed',
+                        'error',
+                        result.message || 'Payment processing failed'
+                    );
+                }
+                
+            } catch (error) {
+                console.error('Network error:', error);
+                showNotification(
+                    '❌ Connection Error',
+                    'error',
+                    'Cannot reach server. Check backend is running.'
+                );
+            } finally {
+                // Reset button
+                withdrawBtn.disabled = false;
+                btnText.textContent = 'Withdraw Funds';
+                btnLoader.style.display = 'none';
+            }
+        }
+        
+        // ================ NOTIFICATION SYSTEM ================
+        function showNotification(title, type, message = '') {
+            console.log(`Notification [${type}]:`, title);
+            
+            // Set content
+            notificationTitle.textContent = title;
+            notificationMessage.innerHTML = message;
+            
+            // Set icon and style
+            if (type === 'success') {
+                notificationIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                notification.className = 'notification notification-success';
+            } else {
+                notificationIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                notification.className = 'notification notification-error';
+            }
+            
+            // Show
+            notification.classList.add('show');
+            
+            // Auto-hide success after 5s
+            if (type === 'success') {
+                setTimeout(hideNotification, 5000);
+            }
+        }
+        
+        function hideNotification() {
+            notification.classList.remove('show');
+        }
+        
+        // ================ DEBUG ================
+        console.log('Frontend Version: 2.0 - Stripe Only');
+        console.log('Backend URL:', BACKEND_URL);
+        console.log('Current Time:', new Date().toLocaleString());
+    </script>
 </body>
 </html>

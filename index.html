@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Withdrawal System</title>
+    <title>Stripe Money System | Deposit & Withdraw</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://js.stripe.com/v3/"></script>
     <style>
         :root {
-            --primary: #57e732;
-            --primary-dark: #6fc0a5;
+            --primary: #635bff;
+            --primary-dark: #4a42d6;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
-            --dark: #8dcdf1;
-            --light: #f3f4f6;
-            --gray: #6cd1d8;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #9ca3af;
         }
         
         * {
@@ -27,57 +28,81 @@
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
         }
         
         .container {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
         .header {
             background: linear-gradient(to right, var(--primary), var(--primary-dark));
             color: white;
-            padding: 30px;
+            padding: 25px 40px;
             text-align: center;
         }
         
         .header h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             margin-bottom: 10px;
         }
         
         .header p {
             opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .tabs {
+            display: flex;
+            background: var(--light);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 18px;
+            text-align: center;
+            font-weight: 600;
             font-size: 1.1rem;
+            cursor: pointer;
+            color: var(--gray);
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            background: white;
         }
         
         .content {
             display: flex;
-            flex-wrap: wrap;
             min-height: 600px;
         }
         
-        .withdrawal-form {
+        .form-section {
             flex: 1;
             padding: 40px;
             min-width: 350px;
-            border-right: 1px solid #e5e7eb;
         }
         
-        .transactions-panel {
+        .balance-section {
             flex: 1;
             padding: 40px;
-            min-width: 350px;
+            background: var(--light);
             display: flex;
             flex-direction: column;
+            min-width: 350px;
         }
         
         .form-group {
@@ -104,25 +129,7 @@
         .form-control:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-        
-        .select-wrapper {
-            position: relative;
-        }
-        
-        .select-wrapper select {
-            appearance: none;
-            padding-right: 40px;
-        }
-        
-        .select-icon {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
-            color: var(--gray);
+            box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
         }
         
         .method-selector {
@@ -144,7 +151,7 @@
         
         .method-option.active {
             border-color: var(--primary);
-            background: rgba(37, 99, 235, 0.1);
+            background: rgba(99, 91, 255, 0.1);
             color: var(--primary);
         }
         
@@ -159,6 +166,7 @@
             cursor: pointer;
             transition: all 0.3s;
             text-align: center;
+            margin-top: 20px;
         }
         
         .btn-primary {
@@ -169,97 +177,23 @@
         .btn-primary:hover {
             background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 10px 20px rgba(99, 91, 255, 0.2);
         }
         
-        .btn-primary:disabled {
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #0da271;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
-        }
-        
-        .transactions-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-        
-        .transactions-header h2 {
-            color: var(--dark);
-            font-size: 1.8rem;
-        }
-        
-        .transactions-list {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-        
-        .transaction-item {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid var(--primary);
-        }
-        
-        .transaction-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .transaction-id {
-            font-weight: 600;
-            color: var(--dark);
-            font-size: 0.9rem;
-        }
-        
-        .transaction-amount {
-            font-weight: 700;
-            color: var(--dark);
-            font-size: 1.4rem;
-            margin: 10px 0;
-        }
-        
-        .transaction-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        }
-        
-        .transaction-detail {
-            color: var(--gray);
-        }
-        
-        .transaction-detail span {
-            color: var(--dark);
-            font-weight: 500;
-        }
-        
-        .status {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .status-completed {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        
-        .no-transactions {
-            text-align: center;
-            padding: 40px;
-            color: var(--gray);
+            transform: none !important;
         }
         
         .loader {
@@ -277,32 +211,99 @@
             to { transform: rotate(360deg); }
         }
         
+        .balance-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .balance-amount {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+        
+        .currency {
+            font-size: 1.5rem;
+            color: var(--gray);
+        }
+        
+        .transactions-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .transaction-item {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .transaction-success {
+            border-left-color: var(--success);
+        }
+        
+        .transaction-failed {
+            border-left-color: var(--danger);
+        }
+        
         .notification {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 15px 25px;
-            border-radius: 10px;
+            padding: 20px 30px;
+            border-radius: 12px;
             color: white;
             font-weight: 600;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
             z-index: 1000;
             opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.5s;
+            transform: translateX(100px);
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 400px;
+            display: flex;
+            align-items: center;
         }
         
         .notification.show {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(0);
         }
         
         .notification-success {
             background: var(--success);
+            border-left: 5px solid #0da271;
         }
         
         .notification-error {
             background: var(--danger);
+            border-left: 5px solid #dc2626;
+        }
+        
+        .notification-icon {
+            font-size: 1.8rem;
+            margin-right: 15px;
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-close {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0 0 0 10px;
         }
         
         @media (max-width: 768px) {
@@ -310,13 +311,16 @@
                 flex-direction: column;
             }
             
-            .withdrawal-form {
-                border-right: none;
-                border-bottom: 1px solid #e5e7eb;
+            .balance-section {
+                border-top: 1px solid #e5e7eb;
             }
             
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
+            }
+            
+            .balance-amount {
+                font-size: 2.5rem;
             }
         }
     </style>
@@ -324,18 +328,25 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-money-bill-wave"></i> Money Withdrawal System</h1>
-            <p>Withdraw funds to your bank account or M-Pesa instantly</p>
+            <h1><i class="fas fa-university"></i> Stripe Money System</h1>
+            <p>Instant Deposits & Withdrawals via Stripe</p>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="withdraw">Withdraw Money</div>
+            <div class="tab" data-tab="deposit">Deposit Money</div>
         </div>
         
         <div class="content">
-            <div class="withdrawal-form">
-                <h2 style="color: var(--dark); margin-bottom: 30px;">Make a Withdrawal</h2>
+            <!-- WITHDRAW SECTION -->
+            <div class="form-section" id="withdrawSection">
+                <h2 style="color: var(--dark); margin-bottom: 10px;">Withdraw Funds</h2>
+                <p style="color: var(--gray); margin-bottom: 30px;">Withdraw to bank account or M-Pesa instantly</p>
                 
-                <form id="withdrawalForm">
+                <form id="withdrawForm">
                     <div class="form-group">
-                        <label for="amount">Amount (KES)</label>
-                        <input type="number" id="amount" class="form-control" min="100" max="1000000" placeholder="Enter amount (min: 100)" required>
+                        <label for="withdrawAmount">Amount (KES)</label>
+                        <input type="number" id="withdrawAmount" class="form-control" min="100" max="1000000" placeholder="Enter amount (min: KES 100)" required>
                         <small style="color: var(--gray); display: block; margin-top: 5px;">Maximum: KES 1,000,000</small>
                     </div>
                     
@@ -353,20 +364,6 @@
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label>Payment Gateway</label>
-                        <div class="method-selector">
-                            <div class="payment-option active" data-payment="flutterwave">
-                                <i class="fas fa-credit-card"></i><br>
-                                Flutterwave
-                            </div>
-                            <div class="payment-option" data-payment="stripe">
-                                <i class="fas fa-money-bill"></i><br>
-                                Stripe
-                            </div>
-                        </div>
-                    </div>
-                    
                     <div id="bankDetails" class="form-group">
                         <label for="accountName">Account Name</label>
                         <input type="text" id="accountName" class="form-control" placeholder="Enter account holder name" required>
@@ -374,65 +371,102 @@
                         <label for="accountNumber" style="margin-top: 15px;">Account Number</label>
                         <input type="text" id="accountNumber" class="form-control" placeholder="Enter account number" required>
                         
-                        <label for="bankCode" style="margin-top: 15px;">Bank</label>
-                        <div class="select-wrapper">
-                            <select id="bankCode" class="form-control" required>
-                                <option value="">Select Bank</option>
-                                <!-- Banks will be loaded dynamically -->
-                            </select>
-                            <div class="select-icon">
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                        </div>
+                        <label for="bankName" style="margin-top: 15px;">Bank Name</label>
+                        <input type="text" id="bankName" class="form-control" placeholder="Enter bank name" required>
                     </div>
                     
                     <div id="mpesaDetails" class="form-group" style="display: none;">
                         <label for="phoneNumber">M-Pesa Phone Number</label>
-                        <input type="tel" id="phoneNumber" class="form-control" placeholder="07XX XXX XXX" pattern="[0-9]{10}" required>
+                        <input type="tel" id="phoneNumber" class="form-control" placeholder="07XX XXX XXX (10 digits)" pattern="[0-9]{10}" required>
                         <small style="color: var(--gray); display: block; margin-top: 5px;">Enter your 10-digit Safaricom number</small>
                     </div>
                     
-                    <div class="form-group" style="background: var(--light); padding: 15px; border-radius: 10px; margin-top: 30px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <div class="form-group" style="background: var(--light); padding: 20px; border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                             <span>Amount:</span>
                             <span id="displayAmount">KES 0</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                             <span>Fees:</span>
                             <span id="displayFees">KES 0</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                        <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 1.1rem;">
                             <span>Net Amount:</span>
                             <span id="displayNetAmount">KES 0</span>
                         </div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary" id="withdrawBtn">
-                        <span id="btnText">Withdraw Funds</span>
-                        <div id="btnLoader" class="loader" style="display: none;"></div>
+                        <span id="withdrawBtnText">Withdraw Funds</span>
+                        <div id="withdrawLoader" class="loader" style="display: none;"></div>
                     </button>
                 </form>
             </div>
             
-            <div class="transactions-panel">
-                <div class="transactions-header">
-                    <h2>Recent Transactions</h2>
-                    <button class="btn" id="refreshBtn" style="width: auto; padding: 10px 20px; background: var(--light); color: var(--dark);">
-                        <i class="fas fa-sync-alt"></i> Refresh
+            <!-- DEPOSIT SECTION -->
+            <div class="form-section" id="depositSection" style="display: none;">
+                <h2 style="color: var(--dark); margin-bottom: 10px;">Deposit Funds</h2>
+                <p style="color: var(--gray); margin-bottom: 30px;">Add money to your account instantly via Stripe</p>
+                
+                <form id="depositForm">
+                    <div class="form-group">
+                        <label for="depositAmount">Amount (KES)</label>
+                        <input type="number" id="depositAmount" class="form-control" min="100" max="500000" placeholder="Enter amount (min: KES 100)" required>
+                        <small style="color: var(--gray); display: block; margin-top: 5px;">Maximum: KES 500,000</small>
+                    </div>
+                    
+                    <div class="form-group" style="background: #e0f2fe; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: var(--primary); margin-bottom: 10px;">
+                            <i class="fas fa-credit-card"></i> Card Payment via Stripe
+                        </h4>
+                        <p style="color: var(--dark); font-size: 0.95rem;">
+                            You'll be redirected to Stripe's secure payment page to complete your deposit.
+                            All major cards accepted.
+                        </p>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success" id="depositBtn">
+                        <span id="depositBtnText">Proceed to Payment</span>
+                        <div id="depositLoader" class="loader" style="display: none;"></div>
+                    </button>
+                </form>
+            </div>
+            
+            <!-- BALANCE & TRANSACTIONS SECTION -->
+            <div class="balance-section">
+                <div class="balance-card">
+                    <h3 style="color: var(--gray); margin-bottom: 5px;">Available Balance</h3>
+                    <div class="balance-amount">
+                        <span id="balanceAmount">0</span>
+                        <span class="currency">KES</span>
+                    </div>
+                    <button class="btn" id="refreshBalance" style="width: auto; padding: 10px 25px; background: var(--light); color: var(--dark);">
+                        <i class="fas fa-sync-alt"></i> Refresh Balance
                     </button>
                 </div>
                 
+                <h3 style="color: var(--dark); margin-bottom: 20px;">Recent Transactions</h3>
                 <div class="transactions-list" id="transactionsList">
-                    <div class="no-transactions">
-                        <i class="fas fa-exchange-alt" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
-                        <p>No transactions yet. Make your first withdrawal!</p>
+                    <div class="no-transactions" id="noTransactions">
+                        <i class="fas fa-exchange-alt" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5; color: var(--gray);"></i>
+                        <p style="color: var(--gray);">No transactions yet</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <div id="notification" class="notification"></div>
+    <!-- NOTIFICATION POPUP -->
+    <div id="notification" class="notification">
+        <div class="notification-icon" id="notificationIcon"></div>
+        <div class="notification-content">
+            <div id="notificationTitle" style="font-size: 1.1rem; margin-bottom: 5px;"></div>
+            <div id="notificationMessage" style="font-size: 0.95rem; opacity: 0.9;"></div>
+        </div>
+        <button class="notification-close" id="notificationClose">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
     
     <script src="app.js"></script>
 </body>
